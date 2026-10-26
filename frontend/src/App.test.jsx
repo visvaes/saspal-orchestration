@@ -1,10 +1,15 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "@testing-library/jest-dom/vitest";
 
 import App from "./App";
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 describe("App", () => {
   it("renders the opening message and submits a prompt", async () => {
@@ -29,9 +34,33 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/chat");
     expect(await screen.findByText("I can help with that.")).toBeInTheDocument();
     expect(
       screen.getByText("Handled by: General Chat"),
     ).toBeInTheDocument();
+  });
+
+  it("uses the configured backend API URL", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.com/");
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        response: "Connected to configured backend.",
+        agent_used: "general_chat",
+      }),
+    });
+    global.fetch = fetchMock;
+
+    render(<App />);
+
+    await user.type(screen.getByLabelText(/message/i), "Test prompt");
+    await user.click(screen.getByRole("button", { name: /send/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://api.example.com/api/chat",
+    );
   });
 });

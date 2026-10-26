@@ -2,7 +2,14 @@ from fastapi.testclient import TestClient
 from httpx import Request, Response
 from openai import AuthenticationError, BadRequestError, NotFoundError
 
-from app.main import app
+from app.main import _allowed_origins, app
+
+
+def test_health_endpoint():
+    response = TestClient(app).get("/api/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 def test_config_health_reports_presence_without_exposing_secrets(monkeypatch):
@@ -23,6 +30,27 @@ def test_config_health_reports_presence_without_exposing_secrets(monkeypatch):
         "api_key_configured": True,
         "model_configured": True,
     }
+
+
+def test_cors_defaults_to_local_frontend_origins(monkeypatch):
+    monkeypatch.delenv("FRONTEND_ORIGINS", raising=False)
+
+    assert _allowed_origins() == [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
+
+
+def test_cors_accepts_comma_separated_frontend_origins(monkeypatch):
+    monkeypatch.setenv(
+        "FRONTEND_ORIGINS",
+        "https://chat.example.com/, https://preview.example.com",
+    )
+
+    assert _allowed_origins() == [
+        "https://chat.example.com",
+        "https://preview.example.com",
+    ]
 
 
 class FakeGraph:

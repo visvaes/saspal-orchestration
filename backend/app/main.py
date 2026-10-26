@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from os import environ
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -30,10 +31,21 @@ class ChatResponse(BaseModel):
     agents_used: list[str] = Field(default_factory=list)
 
 
+def _allowed_origins() -> list[str]:
+    configured_origins = environ.get("FRONTEND_ORIGINS", "").strip()
+    if configured_origins:
+        return [
+            origin.strip().rstrip("/")
+            for origin in configured_origins.split(",")
+            if origin.strip()
+        ]
+    return ["http://127.0.0.1:5173", "http://localhost:5173"]
+
+
 app = FastAPI(title="Agent Orchestration Chatbot")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

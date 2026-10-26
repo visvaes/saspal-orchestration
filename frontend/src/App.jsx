@@ -23,6 +23,10 @@ export default function App() {
     if (!trimmed || loading) {
       return;
     }
+    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(
+      /\/+$/,
+      "",
+    );
 
     const userMessage = { role: "user", content: trimmed };
     const nextMessages = [...messages, userMessage];
@@ -31,7 +35,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(`${apiBaseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
