@@ -1,0 +1,172 @@
+:root {
+  font-family: Inter, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  color: #e5eefb;
+  background: #0d1526;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+}
+
+body {
+  background: linear-gradient(180deg, #0b1220 0%, #111a2a 100%);
+}
+
+button, textarea {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.chat-panel {
+  width: min(900px, 100%);
+  height: min(80vh, 760px);
+  background: rgba(13, 24, 40, 0.9);
+  border: 1px solid rgba(159, 178, 212, 0.2);
+  border-radius: 22px;
+  box-shadow: 0 24px 80px rgba(5, 11, 22, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(159, 178, 212, 0.2);
+  background: rgba(12, 18, 30, 0.9);
+}
+
+.chat-header h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+}
+
+.message-list {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message {
+  max-width: min(75%, 600px);
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(29, 51, 80, 0.85);
+  border: 1px solid rgba(123, 162, 212, 0.2);
+}
+
+.message strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #dfeafb;
+}
+
+.message p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #edf4ff;
+}
+
+.message .agent-used {
+  display: inline-block;
+  margin-top: 10px;
+  color: #b6c8e4;
+  font-size: 0.8rem;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: rgba(46, 99, 192, 0.9);
+}
+
+.message.assistant {
+  align-self: flex-start;
+}
+
+.message.loading {
+  opacity: 0.8;
+}
+
+.composer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid rgba(159, 178, 212, 0.2);
+  background: rgba(12, 18, 30, 0.9);
+}
+
+.composer textarea {
+  flex: 1;
+  resize: vertical;
+  min-height: 60px;
+  max-height: 160px;
+  border-radius: 12px;
+  border: 1px solid rgba(159, 178, 212, 0.2);
+  background: rgba(7, 16, 30, 0.88);
+  color: #edf4ff;
+  padding: 12px 14px;
+}
+
+.composer button {
+  min-width: 110px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4ca3ff 0%, #7d5efc 100%);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.composer button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.composer button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .chat-panel {
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+
+  .composer {
+    flex-direction: column;
+  }
+
+  .composer button {
+    min-height: 48px;
+  }
+}
