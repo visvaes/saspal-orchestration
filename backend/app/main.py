@@ -32,14 +32,25 @@ class ChatResponse(BaseModel):
 
 
 def _allowed_origins() -> list[str]:
+    deployed_frontend_origin = "https://saspal-orchestrationfrontend.vercel.app"
     configured_origins = environ.get("FRONTEND_ORIGINS", "").strip()
     if configured_origins:
-        return [
+        origins = [
             origin.strip().rstrip("/")
             for origin in configured_origins.split(",")
             if origin.strip()
         ]
-    return ["http://127.0.0.1:5173", "http://localhost:5173"]
+        if "*" in origins:
+            raise ValueError("FRONTEND_ORIGINS must use explicit origins, not '*'.")
+        additional_origins = [
+            origin for origin in origins if origin != deployed_frontend_origin
+        ]
+        return [deployed_frontend_origin, *additional_origins]
+    return [
+        deployed_frontend_origin,
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
 
 
 app = FastAPI(title="Agent Orchestration Chatbot")
@@ -47,8 +58,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 

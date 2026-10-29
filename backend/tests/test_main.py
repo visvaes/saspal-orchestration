@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from httpx import Request, Response
 from openai import AuthenticationError, BadRequestError, NotFoundError
@@ -36,9 +37,45 @@ def test_cors_defaults_to_local_frontend_origins(monkeypatch):
     monkeypatch.delenv("FRONTEND_ORIGINS", raising=False)
 
     assert _allowed_origins() == [
+        "https://saspal-orchestrationfrontend.vercel.app",
         "http://127.0.0.1:5173",
         "http://localhost:5173",
     ]
+
+
+def test_cors_preflight_allows_deployed_frontend():
+    response = TestClient(app).options(
+        "/api/chat",
+        headers={
+            "Origin": "https://saspal-orchestrationfrontend.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type, authorization",
+        },
+    )
+
+    assert response.status_code == 200
+    assert (
+        response.headers["access-control-allow-origin"]
+        == "https://saspal-orchestrationfrontend.vercel.app"
+    )
+    assert response.headers["access-control-allow-methods"] == "GET, POST, OPTIONS"
+    allowed_headers = {
+        header.strip().lower()
+        for header in response.headers["access-control-allow-headers"].split(",")
+    }
+    assert {"content-type", "authorization"} <= allowed_headers
+
+
+def test_cors_allows_request_from_deployed_frontend():
+    response = TestClient(app).get(
+        "/api/health",
+        headers={"Origin": "https://saspal-orchestrationfrontend.vercel.app"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == (
+        "https://saspal-orchestrationfrontend.vercel.app"
+    )
 
 
 def test_cors_accepts_comma_separated_frontend_origins(monkeypatch):
@@ -48,9 +85,17 @@ def test_cors_accepts_comma_separated_frontend_origins(monkeypatch):
     )
 
     assert _allowed_origins() == [
+        "https://saspal-orchestrationfrontend.vercel.app",
         "https://chat.example.com",
         "https://preview.example.com",
     ]
+
+
+def test_cors_rejects_wildcard_frontend_origin(monkeypatch):
+    monkeypatch.setenv("FRONTEND_ORIGINS", "*")
+
+    with pytest.raises(ValueError, match="explicit origins"):
+        _allowed_origins()
 
 
 class FakeGraph:
