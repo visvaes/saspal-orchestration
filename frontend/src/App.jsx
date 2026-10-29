@@ -12,6 +12,36 @@ const agentLabels = {
   task_planning: "Task Planning",
 };
 
+export function getChatApiUrl(env = import.meta.env) {
+  const configuredBaseUrl = env.VITE_API_BASE_URL?.trim();
+  if (!configuredBaseUrl) {
+    if (env.PROD) {
+      throw new Error(
+        "VITE_API_BASE_URL must be set to your backend URL in production.",
+      );
+    }
+    return "/api/chat";
+  }
+
+  const apiBaseUrl = configuredBaseUrl.replace(/\/+$/, "");
+  let parsedBaseUrl;
+  try {
+    parsedBaseUrl = new URL(apiBaseUrl);
+  } catch {
+    throw new Error(
+      "VITE_API_BASE_URL must contain only an absolute backend URL, not a variable assignment.",
+    );
+  }
+  if (
+    parsedBaseUrl.protocol !== "http:" &&
+    parsedBaseUrl.protocol !== "https:"
+  ) {
+    throw new Error("VITE_API_BASE_URL must use HTTP or HTTPS.");
+  }
+
+  return `${apiBaseUrl}/api/chat`;
+}
+
 export default function App() {
   const [messages, setMessages] = useState([starterMessage]);
   const [draft, setDraft] = useState("");
@@ -23,11 +53,6 @@ export default function App() {
     if (!trimmed || loading) {
       return;
     }
-    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(
-      /\/+$/,
-      "",
-    );
-
     const userMessage = { role: "user", content: trimmed };
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
@@ -35,7 +60,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/chat`, {
+      const response = await fetch(getChatApiUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

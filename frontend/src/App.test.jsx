@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "@testing-library/jest-dom/vitest";
 
-import App from "./App";
+import App, { getChatApiUrl } from "./App";
 
 afterEach(() => {
   cleanup();
@@ -12,6 +12,27 @@ afterEach(() => {
 });
 
 describe("App", () => {
+  it("uses the relative chat endpoint when no local API URL is configured", () => {
+    expect(getChatApiUrl({ VITE_API_BASE_URL: "", PROD: false })).toBe(
+      "/api/chat",
+    );
+  });
+
+  it("rejects a missing API URL in production", () => {
+    expect(() => getChatApiUrl({ PROD: true })).toThrow(
+      "VITE_API_BASE_URL must be set",
+    );
+  });
+
+  it("rejects an environment assignment pasted as the API URL", () => {
+    expect(() =>
+      getChatApiUrl({
+        VITE_API_BASE_URL: "VITE_API_BASE_URL=https://api.example.com",
+        PROD: true,
+      }),
+    ).toThrow("not a variable assignment");
+  });
+
   it("renders the opening message and submits a prompt", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue({
