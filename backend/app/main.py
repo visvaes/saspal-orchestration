@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from os import environ
@@ -32,31 +33,39 @@ class ChatResponse(BaseModel):
 
 
 def _allowed_origins() -> list[str]:
-    deployed_frontend_origins = [
+    origins = [
         "https://saspal-orchestrationfrontend-git-main-visvaes1.vercel.app",
         "https://saspal-orchestrationfrontend.vercel.app",
     ]
-    configured_origins = environ.get("FRONTEND_ORIGINS", "").strip()
-    if configured_origins:
-        origins = [
+
+    configured = environ.get("FRONTEND_ORIGINS", "").strip()
+
+    if configured:
+        extra_origins = [
             origin.strip().rstrip("/")
-            for origin in configured_origins.split(",")
+            for origin in configured.split(",")
             if origin.strip()
         ]
-        if "*" in origins:
-            raise ValueError("FRONTEND_ORIGINS must use explicit origins, not '*'.")
-        additional_origins = [
-            origin for origin in origins if origin not in deployed_frontend_origins
-        ]
-        return [*deployed_frontend_origins, *additional_origins]
-    return [
-        *deployed_frontend_origins,
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ]
+
+        if "*" in extra_origins:
+            raise ValueError(
+                "FRONTEND_ORIGINS must contain explicit origins, not '*'."
+            )
+
+        origins.extend(origin for origin in extra_origins if origin not in origins)
+    else:
+        origins.extend(
+            [
+                "http://127.0.0.1:5173",
+                "http://localhost:5173",
+            ]
+        )
+
+    return origins
 
 
 app = FastAPI(title="Agent Orchestration Chatbot")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
@@ -78,18 +87,22 @@ def config_health() -> dict[str, bool]:
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    raw_message = request.message if request.message is not None else request.prompt
-    if raw_message is not None and raw_message.strip():
-        user_message = raw_message
+    if request.message is not None and request.message.strip():
+        user_message = request.message
     elif request.prompt is not None and request.prompt.strip():
         user_message = request.prompt
     else:
-        raise HTTPException(status_code=400, detail="A message is required.")
+        raise HTTPException(
+            status_code=400,
+            detail="A message is required.",
+        )
 
     messages: list[HumanMessage | AIMessage | SystemMessage] = []
+
     for item in request.history:
         if not item.content:
             continue
+
         if item.role == "user":
             messages.append(HumanMessage(content=item.content))
         elif item.role == "assistant":
@@ -101,18 +114,25 @@ def chat(request: ChatRequest) -> ChatResponse:
 
     try:
         result = build_graph().invoke({"messages": messages})
+
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
     except AuthenticationError as exc:
         raise HTTPException(
             status_code=503,
             detail="OpenAI rejected the configured API key. Verify OPENAI_API_KEY.",
         ) from exc
+
     except NotFoundError as exc:
         raise HTTPException(
             status_code=503,
             detail="The configured OpenAI model was not found. Verify OPENAI_MODEL.",
         ) from exc
+
     except BadRequestError as exc:
         raise HTTPException(
             status_code=503,
@@ -123,9 +143,12 @@ def chat(request: ChatRequest) -> ChatResponse:
         ) from exc
 
     agents_used = result.get("agents_used", [])
+
     return ChatResponse(
         response=result.get("final_response", ""),
-        agent_used=result.get("agent_used")
-        or (agents_used[0] if agents_used else None),
+        agent_used=(
+            result.get("agent_used")
+            or (agents_used[0] if agents_used else None)
+        ),
         agents_used=agents_used,
     )
