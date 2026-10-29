@@ -37,27 +37,32 @@ def test_cors_defaults_to_local_frontend_origins(monkeypatch):
     monkeypatch.delenv("FRONTEND_ORIGINS", raising=False)
 
     assert _allowed_origins() == [
+        "https://saspal-orchestrationfrontend-git-main-visvaes1.vercel.app",
         "https://saspal-orchestrationfrontend.vercel.app",
         "http://127.0.0.1:5173",
         "http://localhost:5173",
     ]
 
 
-def test_cors_preflight_allows_deployed_frontend():
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://saspal-orchestrationfrontend-git-main-visvaes1.vercel.app",
+        "https://saspal-orchestrationfrontend.vercel.app",
+    ],
+)
+def test_cors_preflight_allows_deployed_frontend(origin):
     response = TestClient(app).options(
         "/api/chat",
         headers={
-            "Origin": "https://saspal-orchestrationfrontend.vercel.app",
+            "Origin": origin,
             "Access-Control-Request-Method": "POST",
             "Access-Control-Request-Headers": "content-type, authorization",
         },
     )
 
     assert response.status_code == 200
-    assert (
-        response.headers["access-control-allow-origin"]
-        == "https://saspal-orchestrationfrontend.vercel.app"
-    )
+    assert response.headers["access-control-allow-origin"] == origin
     assert response.headers["access-control-allow-methods"] == "GET, POST, OPTIONS"
     allowed_headers = {
         header.strip().lower()
@@ -66,16 +71,21 @@ def test_cors_preflight_allows_deployed_frontend():
     assert {"content-type", "authorization"} <= allowed_headers
 
 
-def test_cors_allows_request_from_deployed_frontend():
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://saspal-orchestrationfrontend-git-main-visvaes1.vercel.app",
+        "https://saspal-orchestrationfrontend.vercel.app",
+    ],
+)
+def test_cors_allows_request_from_deployed_frontend(origin):
     response = TestClient(app).get(
         "/api/health",
-        headers={"Origin": "https://saspal-orchestrationfrontend.vercel.app"},
+        headers={"Origin": origin},
     )
 
     assert response.status_code == 200
-    assert response.headers["access-control-allow-origin"] == (
-        "https://saspal-orchestrationfrontend.vercel.app"
-    )
+    assert response.headers["access-control-allow-origin"] == origin
 
 
 def test_cors_accepts_comma_separated_frontend_origins(monkeypatch):
@@ -85,6 +95,7 @@ def test_cors_accepts_comma_separated_frontend_origins(monkeypatch):
     )
 
     assert _allowed_origins() == [
+        "https://saspal-orchestrationfrontend-git-main-visvaes1.vercel.app",
         "https://saspal-orchestrationfrontend.vercel.app",
         "https://chat.example.com",
         "https://preview.example.com",

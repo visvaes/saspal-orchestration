@@ -32,7 +32,10 @@ class ChatResponse(BaseModel):
 
 
 def _allowed_origins() -> list[str]:
-    deployed_frontend_origin = "https://saspal-orchestrationfrontend.vercel.app"
+    deployed_frontend_origins = [
+        "https://saspal-orchestrationfrontend-git-main-visvaes1.vercel.app",
+        "https://saspal-orchestrationfrontend.vercel.app",
+    ]
     configured_origins = environ.get("FRONTEND_ORIGINS", "").strip()
     if configured_origins:
         origins = [
@@ -43,11 +46,11 @@ def _allowed_origins() -> list[str]:
         if "*" in origins:
             raise ValueError("FRONTEND_ORIGINS must use explicit origins, not '*'.")
         additional_origins = [
-            origin for origin in origins if origin != deployed_frontend_origin
+            origin for origin in origins if origin not in deployed_frontend_origins
         ]
-        return [deployed_frontend_origin, *additional_origins]
+        return [*deployed_frontend_origins, *additional_origins]
     return [
-        deployed_frontend_origin,
+        *deployed_frontend_origins,
         "http://127.0.0.1:5173",
         "http://localhost:5173",
     ]
