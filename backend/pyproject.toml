@@ -1,2 +1,13 @@
+[project]
+name = "agent-orchestration-chatbot-backend"
+version = "0.1.0"
+dependencies = [
+    "fastapi==0.160.0",
+    "uvicorn[standard]==0.54.0",
+    "langgraph==1.2.16",
+    "langchain-openai==1.7.2",
+    "python-dotenv==1.2.4",
+]
+
 [tool.vercel]
 entrypoint = "app.main:app"
